@@ -2,31 +2,48 @@ name: Build Go binary for ARM64
 
 on:
   push:
-    branches: [ "br_release_sdk_v3" ]
-  pull_request:
-    branches: [ "br_release_sdk_v3" ]
+    branches: [ "br_release_sdk_v3" ]      # 当推送到 main 分支时触发，可按需修改分支名
+  # 也可以添加 pull_request 触发，按需开启
+  # pull_request:
+  #   branches: [ "main" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v4
+      # 1. 检出代码
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.21' # 替换为你的 Go 版本
+      # 2. 设置 Go 环境
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'   # 请根据你的项目需要的 Go 版本修改
 
-    - name: Build for ARM64
-      run: |
-        GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w" -o your-app-name-arm64 .
-      # 环境变量含义：
-      # GOOS=linux：目标操作系统为 Linux
-      # GOARCH=arm64：目标 CPU 架构为 64位 ARM
-      # CGO_ENABLED=0：禁用 CGO，确保生成静态链接的二进制文件，兼容性更好
+      # 3. 交叉编译 ARM64 二进制
+      - name: Build for ARM64
+        run: |
+          # 编译：生成名为 myapp-arm64 的二进制文件（静态链接，无 CGO）
+          GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w" -o cloudeye-exporter-arm64 .
+          # 创建目标文件夹（如果不存在）
+          mkdir -p build
+          # 将二进制文件复制到 build 文件夹
+          cp cloudeye-exporter-arm64 build/
+          # 可选：你也可以同时复制其他需要的文件，例如配置文件
+          # cp config.yaml build/
 
-    - name: Upload ARM64 artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: cloudeye-exporter-arm64
-        path: cloudeye-exporter
+      # 4. 验证文件夹内容（调试用，可删除）
+      - name: Verify build folder
+        run: |
+          echo "Contents of build folder:"
+          ls -la build/
+
+      # 5. 上传构建产物（整个 build 文件夹）
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: arm64-binary        # 下载时看到的 artifact 名称
+          path: build               # 要上传的文件夹路径
+          # 如果希望直接上传单个文件而不打包文件夹，可以将 path 改为 "myapp-arm64"

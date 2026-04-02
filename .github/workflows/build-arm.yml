@@ -1,0 +1,32 @@
+name: Build Go binary for ARM64
+
+on:
+  push:
+    branches: [ "br_release_sdk_v3" ]
+  pull_request:
+    branches: [ "br_release_sdk_v3" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21' # 替换为你的 Go 版本
+
+    - name: Build for ARM64
+      run: |
+        GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w" -o your-app-name-arm64 .
+      # 环境变量含义：
+      # GOOS=linux：目标操作系统为 Linux
+      # GOARCH=arm64：目标 CPU 架构为 64位 ARM
+      # CGO_ENABLED=0：禁用 CGO，确保生成静态链接的二进制文件，兼容性更好
+
+    - name: Upload ARM64 artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: cloudeye-exporter-arm64
+        path: cloudeye-exporter-arm64
